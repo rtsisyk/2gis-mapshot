@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Product Id="db62a9d9-9d5f-4af4-a74b-c3784d2e7ab5" Name="Модуль &quot;MapShot&quot; для ДубльГИС" Language="1049" Version="1.0.0.0" Manufacturer="Roman O Tsisyck" UpgradeCode="39a5b630-292f-4a08-86c0-5498836f9a9c">
+		<Package InstallerVersion="200" Compressed="yes" Comments="Перед установкой дополнительных модулей необходимо установить оболочку ДубльГИС версии 3.0 или выше" Description="Установка модуля &quot;MapShot&quot;" Languages="1049" Manufacturer="Roman O Tsisyck"  />
+		<CustomAction Id="NotFoundMinVer" Error="На компьютере не обнаружена допустимая версия оболочки. Продолжение невозможно. Установите версию оболочки 3.0.1 или выше." />
+		<CustomAction Id="NoDowngrade" Error="На компрьютере обнаружена более новая версия плагина. Продолжение невозможно." />
+		<CustomAction Id="SetDestinationPath" Property="DestinationPath" Value="[DATABASE]" />
+		<CustomAction Id="SetPluginsDir1" Property="PLUGINSDIR" Value="[PLUGINSDIR1]" />
+		<CustomAction Id="SetPluginsDir2" Property="PLUGINSDIR" Value="[PLUGINSDIR2]" />
+		<CustomAction Id="SetPluginsDirFound1" Property="PLUGINSDIRFOUND" Value="[PLUGINSDIRFOUND1]" />
+		<CustomAction Id="SetPluginsDirFound2" Property="PLUGINSDIRFOUND" Value="[PLUGINSDIRFOUND2]" />
+		
+		<Media Id="1" Cabinet="MapShotPlugin.cab" EmbedCab="yes" />
+
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="INSTALLDIR">	
+				<Directory Id="PLUGINSDIR" Name="Plugins">
+					<Component Id="DGisPlugin" Guid="81cca473-52eb-4a3c-a87b-0f9d3b9bf79f">
+						<File Id="PlgDll" Name="MapShotPlugin.dll" KeyPath="yes" DiskId="1" Source="..\MapShotPlugin\Release\MapShotPlugin.dll" />
+						<File Id="PlgSgn" Name="MapShotPlugin.dgxpi" DiskId="1" Source="..\MapShotPlugin\MapShotPlugin.dgxpi" />
+					</Component>
+				</Directory>
+			</Directory>
+		</Directory>
+
+		<Feature Id="ProductFeature" Title="Package" Level="1">
+			<ComponentRef Id="DGisPlugin" />			
+		</Feature>
+		<Property Id="DiskPrompt" Value="Установка модуля &quot;MapShot&quot;" />
+		<Property Id="ALLUSERS" Value="2" />
+		<WixVariable Id='WixUILicenseRtf' Value='../MapShotPlugin/LICENSE.rtf' />
+		<Property Id="WixUI_VerifyReadyDlg_BackCustom" Value="CustomizeDlg" />
+		<Property Id="WixUI_VerifyReadyDlg_BackChange" Value="CustomizeDlg" />
+		<Property Id="WixUI_VerifyReadyDlg_BackRepair" Value="MaintenanceTypeDlg" />
+		<Property Id="WixUI_VerifyReadyDlg_BackRemove" Value="MaintenanceTypeDlg" />
+		<Property Id="WixUI_VerifyReadyDlg_BackTypical" Value="SetupTypeDlg" />
+		<Property Id="WixUI_VerifyReadyDlg_BackFeatureTree" Value="CustomizeDlg" />
+		<Property Id="WixUI_VerifyReadyDlg_BackComplete" Value="CustomizeDlg" />
+		<Property Id="WixUI_MaintenanceWelcomeDlg_Next" Value="MaintenanceTypeDlg" />
+		<Property Id="WixUI_MaintenanceTypeDlg_Back" Value="MaintenanceWelcomeDlg" />
+		<Property Id="WixUI_MaintenanceTypeDlg_Change" Value="CustomizeDlg" />
+		<Property Id="WixUI_MaintenanceTypeDlg_Repair" Value="VerifyReadyDlg" />
+		<Property Id="WixUI_MaintenanceTypeDlg_Remove" Value="VerifyReadyDlg" />
+		<Property Id="NEWERFOUND" Secure="yes" />
+		<Property Id="OLDERFOUND" Secure="yes" />
+		<Property Id="PRODVERFOUND" Secure="yes" />
+		<Property Id="PLUGINSDIR1">
+			<RegistrySearch Id="FindPluginsRoot1" Root="HKLM" Key="SOFTWARE\Dataeast\Grym" Name="PluginsRoot" Type="directory" />
+		</Property>
+		<Property Id="PLUGINSDIR2">
+			<RegistrySearch Id="FindPluginsRoot2" Root="HKLM" Key="SOFTWARE\DoubleGIS\Grym" Name="PluginsRoot" Type="directory" />
+		</Property>
+		<Property Id="PLUGINSDIRFOUND1">
+			<RegistrySearch Id="FoundPluginsRoot1" Root="HKLM" Key="SOFTWARE\Dataeast\Grym" Name="PluginsRoot" Type="directory" />
+		</Property>		
+		<Property Id="PLUGINSDIRFOUND2">
+			<RegistrySearch Id="FoundPluginsRoot2" Root="HKLM" Key="SOFTWARE\DoubleGIS\Grym" Name="PluginsRoot" Type="directory" />
+		</Property>
+
+		<UIRef Id="WixUI_Minimal" />
+		<Upgrade Id="{39a5b630-292f-4a08-86c0-5498836f9a9c}">
+			<UpgradeVersion Minimum="1.0.0" Property="NEWERFOUND" IncludeMinimum="no" OnlyDetect="yes" />
+			<UpgradeVersion Minimum="0.0.1" Maximum="1.0.0" Property="OLDERFOUND" IncludeMinimum="yes" IncludeMaximum="no" />
+		</Upgrade>
+		<Upgrade Id="{e4adc294-c502-4a61-bff3-76589157e6c7}">
+			<UpgradeVersion Minimum="3.0.1" Property="PRODVERFOUND" OnlyDetect="yes" IncludeMinimum="yes" />
+		</Upgrade>
+		<InstallExecuteSequence>
+			<Custom Action="SetDestinationPath" After="AppSearch" />
+			<Custom Action="SetPluginsDir1" After="SetDestinationPath">NOT PLUGINSDIR</Custom>
+			<Custom Action="SetPluginsDir2" After="SetPluginsDir1">NOT PLUGINSDIR</Custom>
+			<Custom Action="SetPluginsDirFound1" After="SetPluginsDir2">NOT PLUGINSDIRFOUND</Custom>
+			<Custom Action="SetPluginsDirFound2" After="SetPluginsDirFound1">NOT PLUGINSDIRFOUND</Custom>
+			<Custom Action="NotFoundMinVer" After="FindRelatedProducts">(NOT PRODVERFOUND) AND (NOT Installed)</Custom>
+			<Custom Action="NoDowngrade" After="NotFoundMinVer">NEWERFOUND AND (NOT Installed)</Custom>
+			<RemoveExistingProducts After="InstallFinalize" />
+		</InstallExecuteSequence>
+		<InstallUISequence>
+			<Custom Action="SetPluginsDir1" After="AppSearch">NOT PLUGINSDIR</Custom>
+			<Custom Action="SetPluginsDir2" After="SetPluginsDir1">NOT PLUGINSDIR</Custom>
+			<Custom Action="SetPluginsDirFound1" After="SetPluginsDir2">NOT PLUGINSDIRFOUND</Custom>
+			<Custom Action="SetPluginsDirFound2" After="SetPluginsDirFound1">NOT PLUGINSDIRFOUND</Custom>
+		</InstallUISequence>		
+	</Product>
+</Wix>

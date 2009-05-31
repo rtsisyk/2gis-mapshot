@@ -1,0 +1,10 @@
+; MapShotPlugin.def : Declares the module parameters.
+
+LIBRARY      "MapShotPlugin.DLL"
+
+EXPORTS
+;	DllCanUnloadNow		PRIVATE
+;	DllGetClassObject	PRIVATE
+;	DllRegisterServer	PRIVATE
+;	DllUnregisterServer	PRIVATE
+	CreateGrymPlugin	PRIVATE

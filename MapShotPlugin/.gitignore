@@ -1,0 +1,6 @@
+Release/
+Debug/
+*.aps
+resource.h
+*_i.*
+
