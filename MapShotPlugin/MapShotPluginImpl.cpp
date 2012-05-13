@@ -104,11 +104,14 @@ STDMETHODIMP CMapShotPluginImpl::get_XMLInfo(BSTR *pValue)
 			"<grym_plugin_info>\
 			<name>Снимок карты</name>\
 			<description>Плагин позволяет сохранять фрагменты карты в файл.</description>\
-			<copyright>Roman Tsisyck, Barnaul 2009.</copyright>\
+			<copyright>Роман Цисык, Барнаул, 2009,2012</copyright>\
 			<tag>GrymPlugin.MapShot</tag>\
 			<requirements>\
 				<requirement_api>API-1.0</requirement_api>\
 			</requirements>\
+			<supported_languages> \
+				<language>ru</language> \
+			</supported_languages> \
 			</grym_plugin_info>")
 		);
 
