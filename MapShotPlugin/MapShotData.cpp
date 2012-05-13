@@ -389,7 +389,7 @@ Gdiplus::Image *CMapShotData::GetMapImage(GrymCore::IMapRectPtr pMapRect,
 				 * Run message loop here in order to get windows repainted correctly
 				 * WM_PAINT message count was empirically discovered
 				 */
-				const int ANY_MSG_MAX = 10;
+				const int ANY_MSG_MAX = 5;
 				const int PAINT_MSG_MAX = 2;
 
 				MSG msg;
