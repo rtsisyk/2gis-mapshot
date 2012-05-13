@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-	<Product Id="db62a9d9-9d5f-4af4-a74b-c3784d2e7ab5" Name="Модуль &quot;MapShot&quot; для ДубльГИС" Language="1049" Version="1.0.0.0" Manufacturer="Roman O Tsisyck" UpgradeCode="39a5b630-292f-4a08-86c0-5498836f9a9c">
-		<Package InstallerVersion="200" Compressed="yes" Comments="Перед установкой дополнительных модулей необходимо установить оболочку ДубльГИС версии 3.0 или выше" Description="Установка модуля &quot;MapShot&quot;" Languages="1049" Manufacturer="Roman O Tsisyck"  />
+	<Product Id="db62a9d9-9d5f-4af4-a74b-c3784d2e7ab5" Name="Модуль &quot;MapShot&quot; для ДубльГИС" Language="1049" Version="1.1.0.0" Manufacturer="Roman Tsisyk" UpgradeCode="39a5b630-292f-4a08-86c0-5498836f9a9c">
+		<Package InstallerVersion="200" Compressed="yes" Comments="Перед установкой дополнительных модулей необходимо установить оболочку ДубльГИС версии 3.0 или выше" Description="Установка модуля &quot;MapShot&quot;" Languages="1049" Manufacturer="Roman O Tsisyk"  />
 		<CustomAction Id="NotFoundMinVer" Error="На компьютере не обнаружена допустимая версия оболочки. Продолжение невозможно. Установите версию оболочки 3.0.1 или выше." />
 		<CustomAction Id="NoDowngrade" Error="На компрьютере обнаружена более новая версия плагина. Продолжение невозможно." />
 		<CustomAction Id="SetDestinationPath" Property="DestinationPath" Value="[DATABASE]" />

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="MapShotPlugin"
 	ProjectGUID="{A344012E-60C1-4250-9B49-D589ECC65233}"
 	RootNamespace="MapShotPlugin"
