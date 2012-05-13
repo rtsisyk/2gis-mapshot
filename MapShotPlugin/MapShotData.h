@@ -38,9 +38,10 @@ public:
 
 	GrymCore::IMapPointPtr DeviceToMap(LONG x, LONG y);
 	GrymCore::IDevPointPtr MapToDevice(GrymCore::IMapPointPtr pMapPoint);
-	void SwapMapPoints(GrymCore::IMapPointPtr pStartMapPoint,
+
+	GrymCore::IMapRectPtr SwapMapPoints(GrymCore::IMapPointPtr pStartMapPoint,
 					GrymCore::IMapPointPtr pEndMapPoint);
-	
+
 	HRESULT SaveImageDialog(TCHAR* szFile, size_t sizeInWords, 
 		UINT32 &nImageEncoder);
 
@@ -58,6 +59,7 @@ public:
 	const LONG MinImageWidth;
 	const LONG MaxImageHeight;
 	const LONG MaxImageWidth;
+	BOOL InvertedYAxis;
 
 private:
 	HWND m_hMap;

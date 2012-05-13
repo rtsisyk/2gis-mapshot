@@ -277,7 +277,7 @@ STDMETHODIMP CCmdMakeShot::raw_OnKeyUp( LONG /*nChar*/, LONG /*nShift*/ , VARIAN
 STDMETHODIMP CCmdMakeShot::raw_OnMouseDown( enum GrymCore::MouseButton mButton, LONG /*nShift*/, LONG  x, LONG  y, VARIANT_BOOL *pVal)
 {
 	*pVal = VARIANT_FALSE;
-	
+
 	m_pCurrentDownMapPoint = m_data->DeviceToMap(x, y);;
 
 	if(GrymCore::MouseButtonLeft == mButton)
@@ -291,7 +291,10 @@ STDMETHODIMP CCmdMakeShot::raw_OnMouseDown( enum GrymCore::MouseButton mButton, 
 			if(std::fabs(m_pStartMapPoint->X - m_pEndMapPoint->X) > m_data->MinMapWidth &&
 			   std::fabs(m_pStartMapPoint->Y - m_pEndMapPoint->Y) > m_data->MinMapHeight )
 			{
-				m_data->SwapMapPoints(m_pStartMapPoint, m_pEndMapPoint);
+				GrymCore::IMapRectPtr pStartEndMapRect = m_data->SwapMapPoints(m_pStartMapPoint, m_pEndMapPoint);
+				m_pStartMapPoint = m_data->GetFactory()->CreateMapPoint(pStartEndMapRect->MinX, pStartEndMapRect->MinY);
+				m_pEndMapPoint = m_data->GetFactory()->CreateMapPoint(pStartEndMapRect->MaxX, pStartEndMapRect->MaxY);
+
 				m_selectionMode = Selected;
 
 				UpdateDialog();
@@ -304,7 +307,13 @@ STDMETHODIMP CCmdMakeShot::raw_OnMouseDown( enum GrymCore::MouseButton mButton, 
 			if(std::fabs(m_pStartMapPoint->X - m_pEndMapPoint->X) > m_data->MinMapWidth &&
 				std::fabs(m_pStartMapPoint->Y - m_pEndMapPoint->Y) > m_data->MinMapHeight )
 			{
-				m_data->SwapMapPoints(m_pStartMapPoint, m_pEndMapPoint);
+				GrymCore::IMapRectPtr pStartEndMapRect = m_data->SwapMapPoints(
+					m_pStartMapPoint, m_pEndMapPoint);
+				m_pStartMapPoint = m_data->GetFactory()->CreateMapPoint(
+					pStartEndMapRect->MinX, pStartEndMapRect->MinY);
+				m_pEndMapPoint = m_data->GetFactory()->CreateMapPoint(
+					pStartEndMapRect->MaxX, pStartEndMapRect->MaxY);
+
 				m_selectionMode = Selected;
 
 				UpdateDialog();
@@ -359,7 +368,13 @@ STDMETHODIMP CCmdMakeShot::raw_OnMouseUp( enum GrymCore::MouseButton mButton, LO
 			if(std::fabs(m_pStartMapPoint->X - m_pEndMapPoint->X) > m_data->MinMapWidth &&
 			   std::fabs(m_pStartMapPoint->Y - m_pEndMapPoint->Y) > m_data->MinMapHeight )
 			{
-				m_data->SwapMapPoints(m_pStartMapPoint, m_pEndMapPoint);
+				GrymCore::IMapRectPtr pStartEndMapRect = m_data->SwapMapPoints(
+					m_pStartMapPoint, m_pEndMapPoint);
+				m_pStartMapPoint = m_data->GetFactory()->CreateMapPoint(
+					pStartEndMapRect->MinX, pStartEndMapRect->MinY);
+				m_pEndMapPoint = m_data->GetFactory()->CreateMapPoint(
+					pStartEndMapRect->MaxX, pStartEndMapRect->MaxY);
+
 				m_selectionMode = Selected;
 				
 				UpdateDialog();
@@ -372,7 +387,13 @@ STDMETHODIMP CCmdMakeShot::raw_OnMouseUp( enum GrymCore::MouseButton mButton, LO
 			if(std::fabs(m_pStartMapPoint->X - m_pEndMapPoint->X) > m_data->MinMapWidth &&
 				std::fabs(m_pStartMapPoint->Y - m_pEndMapPoint->Y) > m_data->MinMapHeight )
 			{
-				m_data->SwapMapPoints(m_pStartMapPoint, m_pEndMapPoint);
+				GrymCore::IMapRectPtr pStartEndMapRect = m_data->SwapMapPoints(
+					m_pStartMapPoint, m_pEndMapPoint);
+				m_pStartMapPoint = m_data->GetFactory()->CreateMapPoint(
+					pStartEndMapRect->MinX, pStartEndMapRect->MinY);
+				m_pEndMapPoint = m_data->GetFactory()->CreateMapPoint(
+					pStartEndMapRect->MaxX, pStartEndMapRect->MaxY);
+
 				m_selectionMode = Selected;
 				
 				UpdateDialog();
@@ -406,9 +427,11 @@ STDMETHODIMP CCmdMakeShot::raw_OnMouseMove(LONG /*nShift*/, LONG x, LONG y,
 										   VARIANT_BOOL *pVal)
 {
 	*pVal = VARIANT_FALSE;
-	
+
 	if(m_selectionMode == StartSelection)
 		return S_OK;
+
+	GrymCore::IGrymObjectFactoryPtr pFactory = m_data->GetFactory();
 
 	GrymCore::IMapPointPtr pCurrentMoveMapPoint = m_data->DeviceToMap(x, y);
 	if(m_selectionMode == ResizeCorner)
@@ -424,10 +447,18 @@ STDMETHODIMP CCmdMakeShot::raw_OnMouseMove(LONG /*nShift*/, LONG x, LONG y,
 	{
 		switch(m_selectionMode)
 		{
-			case ResizeLeft: m_pStartMapPoint->X = pCurrentMoveMapPoint->X; break;
-			case ResizeRight: m_pEndMapPoint->X = pCurrentMoveMapPoint->X; break;
-			case ResizeTop: m_pStartMapPoint->Y = pCurrentMoveMapPoint->Y; break;
-			case ResizeBottom: m_pEndMapPoint->Y = pCurrentMoveMapPoint->Y; break;
+		case ResizeLeft:
+			m_pStartMapPoint = pFactory->CreateMapPoint(pCurrentMoveMapPoint->X, m_pStartMapPoint->Y);
+			break;
+		case ResizeRight:
+			m_pEndMapPoint = pFactory->CreateMapPoint(pCurrentMoveMapPoint->X, m_pEndMapPoint->Y);
+			break;
+		case ResizeTop:
+			m_pStartMapPoint = pFactory->CreateMapPoint(m_pStartMapPoint->X, pCurrentMoveMapPoint->Y);
+			break;
+		case ResizeBottom:
+			m_pEndMapPoint = pFactory->CreateMapPoint(m_pEndMapPoint->X, pCurrentMoveMapPoint->Y);
+			break;
 		}
 
 		m_data->GetMap()->Invalidate( VARIANT_FALSE );
@@ -436,7 +467,6 @@ STDMETHODIMP CCmdMakeShot::raw_OnMouseMove(LONG /*nShift*/, LONG x, LONG y,
 	}
 	else if(m_selectionMode >= SelectionCanMove && m_selectionMode <= SelectedCanResizeBottom)
 	{
-		
 		m_selectionMode = Selected;
 
 		// Left
@@ -474,6 +504,7 @@ STDMETHODIMP CCmdMakeShot::raw_OnMouseMove(LONG /*nShift*/, LONG x, LONG y,
 		m_pCurrentDownMapPoint = pCurrentMoveMapPoint;
 		m_data->GetMap()->Invalidate( VARIANT_FALSE );
 		*pVal = VARIANT_TRUE;
+
 		return S_OK;
 	}
 
@@ -506,12 +537,12 @@ STDMETHODIMP CCmdMakeShot::raw_OnDraw(GrymCore::IMapDevice *pDevice)
 
 		GrymCore::IGrymObjectFactoryPtr pFactory = m_data->GetFactory();
 
-		GrymCore::IMapPointPtr pTmpStartMapPoint = pFactory->CreateMapPoint(
-			m_pStartMapPoint->X, m_pStartMapPoint->Y);
-		GrymCore::IMapPointPtr pTmpEndMapPoint = pFactory->CreateMapPoint(
-			m_pEndMapPoint->X, m_pEndMapPoint->Y);
-
-		m_data->SwapMapPoints(pTmpStartMapPoint, pTmpEndMapPoint);
+		GrymCore::IMapRectPtr pStartEndMapRect = m_data->SwapMapPoints(
+				m_pStartMapPoint, m_pEndMapPoint);
+		GrymCore::IMapPointPtr pTmpStartMapPoint = m_data->GetFactory()->CreateMapPoint(
+				pStartEndMapRect->MinX, pStartEndMapRect->MinY);
+		GrymCore::IMapPointPtr pTmpEndMapPoint = m_data->GetFactory()->CreateMapPoint(
+					pStartEndMapRect->MaxX, pStartEndMapRect->MaxY);
 
 		GrymCore::IDevPointPtr pStartDevPoint = m_data->MapToDevice(pTmpStartMapPoint);
 		GrymCore::IDevPointPtr pEndDevPoint = m_data->MapToDevice(pTmpEndMapPoint);
@@ -567,15 +598,12 @@ void CCmdMakeShot::UpdateDialog()
 {
 	GrymCore::IGrymObjectFactoryPtr pFactory = m_data->GetFactory();
 
-	GrymCore::IMapPointPtr pTmpStartMapPoint = pFactory->CreateMapPoint(
-		m_pStartMapPoint->X, m_pStartMapPoint->Y);
-	GrymCore::IMapPointPtr pTmpEndMapPoint = pFactory->CreateMapPoint(
-		m_pEndMapPoint->X, m_pEndMapPoint->Y);
-
-	m_data->SwapMapPoints(pTmpStartMapPoint, pTmpEndMapPoint);
-
-	GrymCore::IMapRectPtr pMapRect = pFactory->CreateMapRect(pTmpStartMapPoint->X,
-		pTmpStartMapPoint->Y, pTmpEndMapPoint->X, pTmpEndMapPoint->Y);
+	GrymCore::IMapRectPtr pStartEndMapRect = m_data->SwapMapPoints(
+			m_pStartMapPoint, m_pEndMapPoint);
+	GrymCore::IMapPointPtr pTmpStartMapPoint = m_data->GetFactory()->CreateMapPoint(
+			pStartEndMapRect->MinX, pStartEndMapRect->MinY);
+	GrymCore::IMapPointPtr pTmpEndMapPoint = m_data->GetFactory()->CreateMapPoint(
+			pStartEndMapRect->MaxX, pStartEndMapRect->MaxY);
 
 	ATLASSERT(m_dlg != NULL);
 	if(!m_dlg->IsWindow())
@@ -587,9 +615,9 @@ void CCmdMakeShot::UpdateDialog()
 			pEndDevPoint->X - pStartDevPoint->X, 
 			pEndDevPoint->Y - pStartDevPoint->Y);
 
-		m_dlg->put_InitialParams(pMapRect, pImageSize);
+		m_dlg->put_InitialParams(pStartEndMapRect, pImageSize);
 		m_dlg->Create(m_data->GetParentHWND());
 		m_dlg->ShowWindow(SW_NORMAL);
 	}
-	else m_dlg->MapRect = pMapRect;
+	else m_dlg->MapRect = pStartEndMapRect;
 }

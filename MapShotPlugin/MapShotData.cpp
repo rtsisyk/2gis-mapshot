@@ -20,6 +20,31 @@
 #include "StdAfx.h"
 #include "MapShotData.h"
 
+// TODO: remote after testing
+#ifdef _DEBUG
+#include <windows.h>
+bool _trace(TCHAR *format, ...)
+{
+   TCHAR buffer[1000];
+
+   va_list argptr;
+   va_start(argptr, format);
+   _vstprintf_s(buffer, format, argptr);
+   va_end(argptr);
+
+   OutputDebugString(buffer);
+
+   return true;
+}
+#endif
+
+#ifdef _DEBUG
+bool _trace(TCHAR *format, ...);
+#define TRACE _trace
+#else
+#define TRACE __noop
+#endif
+
 CMapShotData::CMapShotData(GrymCore::IGrym *grymRoot,
 												 GrymCore::IBaseViewThread *baseView):
 	m_grymRoot(grymRoot),
@@ -48,6 +73,9 @@ CMapShotData::CMapShotData(GrymCore::IGrym *grymRoot,
 		Gdiplus::GetImageEncoders(nEncoders, size, pEncoders); 
 	}
 	else m_gdiplusToken = 0;
+
+	// TODO: support for inverted axis
+	InvertedYAxis = false;
 }
 
 CMapShotData::~CMapShotData()
@@ -219,7 +247,7 @@ GrymCore::IDevPointPtr CMapShotData::MapToDevice(GrymCore::IMapPointPtr pMapPoin
 /*
 	Swap IMapPoint
 */
-void CMapShotData::SwapMapPoints(GrymCore::IMapPointPtr pStartMapPoint,
+GrymCore::IMapRectPtr CMapShotData::SwapMapPoints(GrymCore::IMapPointPtr pStartMapPoint,
 					GrymCore::IMapPointPtr pEndMapPoint)
 {
 	DOUBLE minX, minY, maxX, maxY;
@@ -235,7 +263,8 @@ void CMapShotData::SwapMapPoints(GrymCore::IMapPointPtr pStartMapPoint,
 		maxX = pStartMapPoint->X;
 	}
 
-	if( pStartMapPoint->Y < pEndMapPoint->Y )
+	if( (InvertedYAxis && pStartMapPoint->Y < pEndMapPoint->Y) ||
+		(!InvertedYAxis && pStartMapPoint->Y > pEndMapPoint->Y) )
 	{
 		minY = pStartMapPoint->Y;
 		maxY = pEndMapPoint->Y;
@@ -246,11 +275,9 @@ void CMapShotData::SwapMapPoints(GrymCore::IMapPointPtr pStartMapPoint,
 		maxY = pStartMapPoint->Y;
 	}
 
-	pStartMapPoint->X = minX;
-	pEndMapPoint->X = maxX;
 
-	pStartMapPoint->Y = minY;
-	pEndMapPoint->Y = maxY;
+	GrymCore::IGrymObjectFactoryPtr pFactory = GetFactory();
+	return pFactory->CreateMapRect(minX, minY, maxX, maxY);
 }
 
 /*
@@ -273,15 +300,22 @@ Gdiplus::Image *CMapShotData::GetMapImage(GrymCore::IMapRectPtr pMapRect,
 	// Get visible area
 	RECT rcClient;
 	::GetClientRect(hMap, &rcClient);
-	LONG visibleHeight = rcClient.bottom -  rcClient.top;
-	LONG visibleWidth = rcClient.right -  rcClient.left;
+	// LONG visibleHeight = rcClient.bottom -  rcClient.top;
+	// LONG visibleWidth = rcClient.right -  rcClient.left;
+
+	// size without banners
+	RECT rcClientUsable;
+	rcClientUsable.left = 50;
+	rcClientUsable.right = rcClient.right -  rcClient.left - 200;
+	rcClientUsable.top = 0;
+	rcClientUsable.bottom = rcClient.bottom -  rcClient.top - 0;
 
 	// Calc scale
-	DOUBLE scale = pMapRect->Width / (double) pImageSize->Width;
+	DOUBLE scale = std::fabs(pMapRect->Width) / (double) pImageSize->Width;
 
 	// Calc number of pieces
-	UINT countV = static_cast<UINT>(std::ceil(pImageSize->Height / double(visibleHeight)));
-	UINT countH = static_cast<UINT>(std::ceil(pImageSize->Width / double(visibleWidth)));
+	UINT countV = static_cast<UINT>(std::ceil(pImageSize->Height / double(rcClientUsable.bottom -  rcClientUsable.top)));
+	UINT countH = static_cast<UINT>(std::ceil(pImageSize->Width / double(rcClientUsable.right -  rcClientUsable.left)));
 
 	// Create temporary bitmap
 	pResultBitmap = new Gdiplus::Bitmap(pImageSize->Width, pImageSize->Height, PixelFormat24bppRGB );
@@ -292,8 +326,10 @@ Gdiplus::Image *CMapShotData::GetMapImage(GrymCore::IMapRectPtr pMapRect,
 	// Create DC
 	hDC = ::GetDC( hMap );
 	if(hDC) hMemDC = ::CreateCompatibleDC(hDC);
+
 	// Create Temporary GDI HBITMAP
-	HBITMAP hTmpBitmap = ::CreateCompatibleBitmap(hDC, visibleWidth, visibleHeight);
+	HBITMAP hTmpBitmap = ::CreateCompatibleBitmap(hDC,
+		rcClient.right - rcClient.left, rcClient.bottom - rcClient.top);
 
 	if (NULL != hMemDC && pResultBitmap != NULL && pGraphics!= NULL && hTmpBitmap != NULL)
 	{
@@ -301,19 +337,29 @@ Gdiplus::Image *CMapShotData::GetMapImage(GrymCore::IMapRectPtr pMapRect,
 		HBITMAP hBitmapOld = (HBITMAP) ::SelectObject(hMemDC, hTmpBitmap); 
 
 		GrymCore::IGrymObjectFactoryPtr pFactory = GetFactory(); 	
+		/*
 		GrymCore::IDevPointPtr pDevPoint = pFactory->CreateDevPoint(0,0);
 
 		GrymCore::IDevRectPtr pDevRect = pFactory->CreateDevRect( 
 			rcClient.left, rcClient.top, rcClient.right, rcClient.bottom );
+		*/
 
-		DOUBLE mapDeltaV = visibleHeight * scale;
-		DOUBLE mapDeltaH = visibleWidth * scale;
+		const DOUBLE mapDeltaV = InvertedYAxis
+			? (rcClientUsable.bottom - rcClientUsable.top) * scale
+			: (rcClientUsable.bottom - rcClientUsable.top) * -scale;
+		const DOUBLE mapDeltaH = (rcClientUsable.right - rcClientUsable.left) * scale;
+
+		const DOUBLE mapOffsetV = InvertedYAxis
+			? (- rcClientUsable.top) * scale
+			: (- rcClientUsable.top) * -scale;
+		const DOUBLE mapOffsetH = (- rcClientUsable.left) * scale;
 
 		LONG imageCurPosV = 0;
 		LONG imageCurPosH = 0;
 
 		DOUBLE mapCurPosH = pMapRect->MinX;
-		DOUBLE mapCurPosV = pMapRect->MinY;
+		DOUBLE mapCurPosV = InvertedYAxis ? pMapRect->MaxY : pMapRect->MinY;
+
 		DOUBLE mapNextPosH = mapCurPosH;
 		DOUBLE mapNextPosV = mapCurPosV;
 
@@ -332,21 +378,60 @@ Gdiplus::Image *CMapShotData::GetMapImage(GrymCore::IMapRectPtr pMapRect,
 
 				// Get next piece
 				GrymCore::IMapRectPtr pTmpRect = pFactory->CreateMapRect(
-					mapCurPosH, mapCurPosV, mapNextPosH, mapNextPosV);
+					mapCurPosH+mapOffsetH, mapCurPosV+mapOffsetV, mapNextPosH+mapOffsetH, mapNextPosV+mapOffsetV);
+
 				pMap->SetMapVisibleRect(pTmpRect, TRUE);
-				pMap->CopyMap( pDevRect, reinterpret_cast<OLE_HANDLE>(hMemDC), pDevPoint);
+				//pMap->CopyMap( pDevRect, reinterpret_cast<OLE_HANDLE>(hMemDC), pDevPoint);
+
+				/*
+				 * HACK: try to use PrintWindow instead of broken CopyMap
+				 * Run message loop here in order to get windows repainted correctly
+				 * WM_PAINT message count was empirically discovered
+				 */
+				const int ANY_MSG_MAX = 10;
+				const int PAINT_MSG_MAX = 2;
+
+				MSG msg;
+				for(int msgCount = 0, msgCountPaint = 0;
+					(::GetMessage(&msg, NULL, 0, 0) != 0) && msgCount < ANY_MSG_MAX && msgCountPaint < PAINT_MSG_MAX;
+					msgCount++) {
+					TRACE(_T("MSG # %d %p %u\n"), msgCount,  msg, msg.message);
+
+					if (msg.message == WM_PAINT) {
+						msgCountPaint++;
+					}
+
+					::TranslateMessage(&msg);
+					::DispatchMessage(&msg);
+				}
+
+				// make windows snapshost
+				::PrintWindow(hMap, hMemDC, PW_CLIENTONLY);
+
+				TRACE(_T("Piece (%d, %d) Map (%lf, %lf) (%lf, %lf) => Image (%ld, %ld) (%ld, %ld) (%ld, %ld)\n"),
+					i,  j, pTmpRect->MinX, pTmpRect->MinY, pTmpRect->MaxX, pTmpRect->MaxY, 
+					imageCurPosH, imageCurPosV,
+					(rcClientUsable.right - rcClientUsable.left),
+					(rcClientUsable.bottom -  rcClientUsable.top),
+					(rcClient.right - rcClient.left),
+					(rcClient.bottom -  rcClient.top)
+					);
 
 				// Paint piece on Graphics
 				Gdiplus::Bitmap *pTmpBitmap = Gdiplus::Bitmap::FromHBITMAP(hTmpBitmap, hPal);
-				pGraphics->DrawImage(pTmpBitmap, imageCurPosH, imageCurPosV, visibleWidth, visibleHeight);
+				pGraphics->DrawImage(pTmpBitmap, (INT) imageCurPosH, (INT) imageCurPosV, 
+					(INT) rcClientUsable.left, (INT) rcClientUsable.top, 
+					(INT) (rcClientUsable.right - rcClientUsable.left),
+					(INT) (rcClientUsable.bottom -  rcClientUsable.top),
+					Gdiplus::UnitPixel);
 				delete pTmpBitmap;
 
 				mapCurPosH = mapNextPosH;
-				imageCurPosH+=visibleWidth;
+				imageCurPosH += (rcClientUsable.right - rcClientUsable.left);
 			}
 
 			mapCurPosV = mapNextPosV;
-			imageCurPosV+=visibleHeight;
+			imageCurPosV += (rcClientUsable.bottom -  rcClientUsable.top);
 		}
 
 		// Revert initial map position

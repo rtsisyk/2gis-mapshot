@@ -20,6 +20,8 @@
 #include "stdafx.h"
 #include "CmdMakeShotDlg.h"
 
+#include <cmath>
+
 CCmdMakeShotDlg::CCmdMakeShotDlg(CCmdMakeShot *cmd)
 {
 	m_bUpdateLock = true;
@@ -99,10 +101,10 @@ LRESULT CCmdMakeShotDlg::OnEnChangeValue(WORD /*wNotifyCode*/,
 				UpdateEdits(true, false, false); // Restore value
 			else
 			{
-				m_scale = m_pMapRect->Width / double(tmp);
+				m_scale = std::fabs(m_pMapRect->Width) / double(tmp);
 				m_pImageSize->Width = tmp;
 				m_pImageSize->Height = static_cast<long>(
-					ceil(m_pMapRect->Height / m_scale));
+					std::ceil(std::fabs(m_pMapRect->Height) / m_scale));
 
 				UpdateEdits(false, true, true);
 			}
@@ -115,9 +117,9 @@ LRESULT CCmdMakeShotDlg::OnEnChangeValue(WORD /*wNotifyCode*/,
 				UpdateEdits(false, true, true);
 			else
 			{
-				m_scale = m_pMapRect->Height / double(tmp);
+				m_scale = std::fabs(m_pMapRect->Height) / double(tmp);
 				m_pImageSize->Width = static_cast<long>(
-					ceil(m_pMapRect->Width / m_scale));
+					std::ceil(std::fabs(m_pMapRect->Width) / m_scale));
 				m_pImageSize->Height = tmp;
 
 				UpdateEdits(true, false, true);
@@ -133,9 +135,9 @@ LRESULT CCmdMakeShotDlg::OnEnChangeValue(WORD /*wNotifyCode*/,
 			{
 				m_scale = m_cmd->m_data->MetersToInternal(tmp);
 				m_pImageSize->Width = static_cast<long>(
-					ceil(m_pMapRect->Width / m_scale));
+					std::ceil(std::fabs(m_pMapRect->Width) / m_scale));
 				m_pImageSize->Height = static_cast<long>(
-					ceil(m_pMapRect->Height / m_scale));
+					std::ceil(std::fabs(m_pMapRect->Height) / m_scale));
 
 				UpdateEdits(true, true, false);
 			}
@@ -171,8 +173,8 @@ void CCmdMakeShotDlg::put_MapRect(GrymCore::IMapRectPtr pMapRect)
 	ATLASSERT(m_scale != 0.0);
 	m_pMapRect = pMapRect;
 
-	m_pImageSize->Width = static_cast<long>(std::ceil(m_pMapRect->Width / m_scale));
-	m_pImageSize->Height = static_cast<long>(std::ceil(m_pMapRect->Height / m_scale));
+	m_pImageSize->Width = static_cast<long>(std::ceil(std::fabs(m_pMapRect->Width) / m_scale));
+	m_pImageSize->Height = static_cast<long>(std::ceil(std::fabs(m_pMapRect->Height) / m_scale));
 	UpdateEdits(true, true, false);
 }
 
@@ -187,10 +189,10 @@ void CCmdMakeShotDlg::UpdateEdits(bool bUpdateWidth, bool bUpdateHeight,
 	ATL::CWindow wnd = GetDlgItem(IDC_MAPSIZE);
 	if(wnd)
 	{
-		_stprintf_s(tmpstr, szMapSizeFormat, 
-			m_cmd->m_data->InternalToMeters(m_pMapRect->Width),
-			m_cmd->m_data->InternalToMeters(m_pMapRect->Height)
-		);
+		const DOUBLE width = std::fabs(m_cmd->m_data->InternalToMeters(m_pMapRect->Width));
+		const DOUBLE height = std::fabs(m_cmd->m_data->InternalToMeters(m_pMapRect->Height));
+		_stprintf_s(tmpstr, szMapSizeFormat, width, height);
+
 		wnd.SetWindowText(tmpstr);
 	}
 
