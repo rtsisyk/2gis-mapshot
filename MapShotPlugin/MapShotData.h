@@ -59,6 +59,7 @@ public:
 	const LONG MinImageWidth;
 	const LONG MaxImageHeight;
 	const LONG MaxImageWidth;
+	const DOUBLE MinScale;
 	BOOL InvertedYAxis;
 
 private:

@@ -54,7 +54,8 @@ CMapShotData::CMapShotData(GrymCore::IGrym *grymRoot,
 	MinImageHeight(5),
 	MinImageWidth(5),
 	MaxImageHeight(6000),
-	MaxImageWidth(6000)
+	MaxImageWidth(6000),
+	MinScale(0.3)
 {
 	ATLASSERT(NULL != m_grymRoot);
 	ATLASSERT(NULL != m_baseView);

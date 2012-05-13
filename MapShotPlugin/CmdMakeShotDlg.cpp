@@ -251,13 +251,37 @@ LRESULT CCmdMakeShotDlg::OnDeltaposScalespin(int /*idCtrl*/,
 
 HRESULT CCmdMakeShotDlg::Save()
 {
-	if(m_pImageSize->Width > m_cmd->m_data->MaxImageWidth || 
-		m_pImageSize->Height > m_cmd->m_data->MaxImageHeight)
+	BOOL bSmallScale = (m_scale / 100.0) < (m_cmd->m_data->MinScale);
+	BOOL bHugeSize = (m_pImageSize->Width > m_cmd->m_data->MaxImageWidth) || 
+		(m_pImageSize->Height > m_cmd->m_data->MaxImageHeight);
+
+	if(bHugeSize || bSmallScale)
 	{
-		if(IDNO == MessageBox(_T("Размер изображения слишком велик. ")
-			_T("Для сохранения данного изображения может понадобиться ")
-			_T("большое количество памяти. Вы действительно хотите продолжить?"), 
-			_T("Внимание!"), MB_ICONWARNING | MB_YESNO) )
+		TCHAR szWarningCaption[512];
+		_tcscpy_s(szWarningCaption, _T(""));
+		TCHAR szWarningMessage[2048];
+		_tcscpy_s(szWarningMessage, _T(""));
+		::LoadString( ATL::_AtlBaseModule.GetResourceInstance(), IDS_WARN_CAPTION, 
+			szWarningCaption, sizeof(szWarningCaption)/ sizeof(TCHAR));
+
+		if (bHugeSize)
+		{
+			TCHAR szSizeWarningMessage[512];
+			::LoadString( ATL::_AtlBaseModule.GetResourceInstance(), IDS_WARN_SIZE, 
+				szSizeWarningMessage, sizeof(szSizeWarningMessage)/ sizeof(TCHAR));
+			_tcscat_s(szWarningMessage, szSizeWarningMessage);
+			_tcscat_s(szWarningMessage, _T("\n\n"));
+		}
+
+		if (bSmallScale)
+		{
+			TCHAR szScaleWarningMessage[512];
+			::LoadString( ATL::_AtlBaseModule.GetResourceInstance(), IDS_WARN_SCALE, 
+				szScaleWarningMessage, sizeof(szScaleWarningMessage)/ sizeof(TCHAR));
+			_tcscat_s(szWarningMessage, szScaleWarningMessage);
+		}
+
+		if(IDNO == MessageBox(szWarningMessage, szWarningCaption, MB_ICONWARNING | MB_YESNO) )
 			return S_FALSE;
 	}
 
@@ -287,8 +311,16 @@ HRESULT CCmdMakeShotDlg::Save()
 		m_cmd->m_selectionMode = CCmdMakeShot::Selected;
 		m_cmd->m_data->GetMap()->Invalidate( VARIANT_FALSE );
 
-		MessageBox(_T("Произошла ошибка при сохранении карты"),
-			_T("Ошибка"), MB_OK | MB_ICONEXCLAMATION);
+		TCHAR szErrorCaption[512];
+		_tcscpy_s(szErrorCaption, _T(""));
+		TCHAR szErrorMessage[512];
+		_tcscpy_s(szErrorMessage, _T(""));
+		::LoadString( ATL::_AtlBaseModule.GetResourceInstance(), IDS_ERROR_CAPTION, 
+			szErrorCaption, sizeof(szErrorCaption)/ sizeof(TCHAR));
+		::LoadString( ATL::_AtlBaseModule.GetResourceInstance(), IDS_ERROR_SAVE, 
+			szErrorMessage, sizeof(szErrorMessage)/ sizeof(TCHAR));
+
+		MessageBox(szErrorMessage, szErrorCaption, MB_OK | MB_ICONEXCLAMATION);
 	}
 	
 	return E_FAIL;
